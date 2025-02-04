@@ -50,58 +50,53 @@ const app = createApp({
             return `https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`;
         };
 
-        // 切换编辑状态
-        const toggleEdit = (index) => {
-            const order = orders.value[index];
-            if (order.editable) {
-                // 如果当前是编辑状态，点击按钮时保存并检查订单
-                checkOrder(index);
-            } else {
-                // 如果当前不是编辑状态，点击按钮时进入编辑状态
-                order.editable = !order.editable;
-            }
-        };
-
         // 发送订单
         const sendOrder = async (index) => {
             const order = orders.value[index];
+            const check = !checkOrderDetail(order);
+            if (check == true)  {
+                // 构造请求体
+                const requestBody = {
+                    saleOrderCode: order.saleOrderCode,
+                    name: order.name,
+                    phone: order.phone,
+                    state: order.state,
+                    cityName: order.cityName,
+                    postalCode: order.postalCode,
+                    companyName: order.companyName,
+                    line1: order.line1,
+                    line2: order.line2,
+                    line3: order.line3,
+                    doorplate: order.doorplate
+                };
 
-            // 构造请求体
-            const requestBody = {
-                saleOrderCode: order.saleOrderCode,
-                name: order.name,
-                phone: order.phone,
-                state: order.state,
-                cityName: order.cityName,
-                postalCode: order.postalCode,
-                companyName: order.companyName,
-                line1: order.line1,
-                line2: order.line2,
-                line3: order.line3,
-                doorplate: order.doorplate
-            };
+                // 调用 ERP API 模块
+                try {
+                    // 构建 XML 请求体
+                    const user = 'Admin'; // 替换为实际用户名
+                    const password = 'Admin2022@EC'; // 替换为实际密码
+                    const response = await sendNewAddress(requestBody, user, password);
 
-            // 调用 ERP API 模块
-            try {
-                // 构建 XML 请求体
-                const user = 'Admin'; // 替换为实际用户名
-                const password = 'Admin2022@EC'; // 替换为实际密码
-                const response = await sendNewAddress(requestBody, user, password);
+                    // 检查 response.code 是否为 200
+                    if (response.code !== "200") {
+                        alert(`ERP 返回的 code: ${response.code}, message: ${response.message}`);
+                        return;
+                    }
+                    else {
+                        console.warn('ERP 返回的 code 不是 200，忽略该响应');
+                        alert(`ERP 返回的 code: ${response.code}, message: ${response.message}`);
+                        return;
+                    }
 
-                // 检查 response.code 是否为 200
-                if (response.code !== "200") {
-                    alert(`ERP 返回的 code: ${response.code}, message: ${response.message}`);
-                    return;
+                } catch (error) {
+                    console.error('请求 ERP 失败:', error);
+                    alert('同步失败，请检查网络或联系管理员。');
                 }
-                else {
-                    console.warn('ERP 返回的 code 不是 200，忽略该响应');
-                    alert(`ERP 返回的 code: ${response.code}, message: ${response.message}`);
-                    return;
-                }
-
-            } catch (error) {
-                console.error('请求 ERP 失败:', error);
-                alert('同步失败，请检查网络或联系管理员。');
+            }
+            else{
+                order.check = !checkOrderDetail(order);
+                // 显示检查结果弹窗
+                checkResultDialogVisible.value = true;
             }
         };
 
@@ -142,7 +137,6 @@ const app = createApp({
                 if (status === 'OK') {
                     const location = results[0].geometry.location;
                     dataRow['googleVertify'] = results[0]["formatted_address"];
-                    console.log(results[0])
                     dataRow['googleVertify_area_level_1'] = getAddressComponents(results[0],"administrative_area_level_1")
                     dataRow['googleVertify_area_level_2'] = getAddressComponents(results[0],"administrative_area_level_2")
                     dataRow['googleVertify_area_level_3'] = getAddressComponents(results[0],"administrative_area_level_3")
@@ -171,9 +165,7 @@ const app = createApp({
             });
         };
 
-        // 检查订单数据
-        const checkOrder = (index) => {
-            const order = orders.value[index];
+        function checkOrderDetail(order) {
             const result = [];
 
             // 检查必填字段是否为空
@@ -222,8 +214,12 @@ const app = createApp({
 
             // 如果有任何一项检查失败，设置 check 为 false
             const hasError = result.some(item => item.status === '失败');
-            order.check = !hasError;
-
+            return hasError
+        };
+        // 检查订单数据
+        const checkOrder = (index) => {
+            const order = orders.value[index];
+            order.check = !checkOrderDetail(order);
             // 显示检查结果弹窗
             checkResultDialogVisible.value = true;
         };
@@ -243,20 +239,23 @@ const app = createApp({
             if (selectedOrderIndex.value != index)
             {
                 selectedOrderIndex.value = index;
-                const order = orders.value[index];
-                const strAddress = `${order.line1} ${order.doorplate}, ${order.cityName}, ${order.state}, ${order.postalCode}, ${order.countryCode}`;
-                updateMap(order, strAddress);
             }
+        };
+
+        const googleVertifyOrder = (index) => {
+            const order = orders.value[index];
+            const strAddress = `${order.line1} ${order.doorplate}, ${order.cityName}, ${order.state}, ${order.postalCode}, ${order.countryCode}`;
+            updateMap(order, strAddress);
         };
 
         // 撤销操作
         const undoOrder = (index) => {
             console.log('撤销操作的索引:', index);
-            console.log('orderData.value:', orderData.value);
-            console.log('orderData.value[index]:', orderData.value[index]);
 
             if (index >= 0 && index < orderData.value.length && orderData.value[index]) {
                 // 用缓存的数据覆盖 orders 中的对应数据
+                console.log('orderData.value[index]:', orderData.value[index]);
+                console.log('orders.value[index]:', orders.value[index]);
                 orders.value[index] = JSON.parse(JSON.stringify(orderData.value[index]));
                 alert(`订单 ${orders.value[index].saleOrderCode} 已撤销到上次同步的状态！`);
             } else {
@@ -267,6 +266,10 @@ const app = createApp({
         // 删除订单
         const deleteOrder = (index) => {
             orders.value.splice(index, 1);
+            if (selectedOrderIndex.value === index) {
+                selectedOrderIndex.value = 0; // 重置选中状态
+            }
+            orderData.value.splice(index, 1);
             if (selectedOrderIndex.value === index) {
                 selectedOrderIndex.value = 0; // 重置选中状态
             }
@@ -288,18 +291,18 @@ const app = createApp({
         const handlePaste = (event) => {
             event.preventDefault(); // 阻止默认粘贴行为
             const pasteText = (event.clipboardData || window.clipboardData).getData('text');
-            console.log('粘贴内容:', pasteText); // 调试日志
+            // console.log('粘贴内容:', pasteText); // 调试日志
             // 按空格和分号切割字符串
             const lines = pasteText.split(/[\s;]+/).filter(line => line.trim() !== '');
-            console.log('切割后的内容:', lines); // 调试日志
+            // console.log('切割后的内容:', lines); // 调试日志
             // 将切割后的字符串拼接为多行文本，并直接更新到文本框
             inputText.value = lines.join('\n');
-            console.log('更新后的 inputText:', inputText.value); // 调试日志
+            // console.log('更新后的 inputText:', inputText.value); // 调试日志
         };
 
         const cleanInput = (event) => {
             inputText.value = '';
-            console.log('清空 inputText'); // 调试日志
+            // console.log('清空 inputText'); // 调试日志
         };
 
         function filterOrderData(response) {
@@ -355,10 +358,10 @@ const app = createApp({
         const syncText = async () => {
             if (!inputText.value.trim()) {
                 alert('请输入内容后再同步！');
-                console.log('为空！不请求erp api!')
+                // console.log('为空！不请求erp api!')
                 return;
             }
-            console.log('不为空！开始请求erp api!')
+            // console.log('不为空！开始请求erp api!')
             // 按空格和分号切割字符串
             const orderIds = inputText.value.split(/[\s;]+/).filter(line => line.trim() !== '');
 
@@ -371,7 +374,7 @@ const app = createApp({
                 const pageSize = 1000;
                 const response = await fetchErpOrders(orderIds, user, password, page, pageSize);
 
-                console.log('ERP 返回的数据:', response);
+                // console.log('ERP 返回的数据:', response);
                 // 检查 response.code 是否为 200
                 if (response.code !== "200") {
                     console.warn('ERP 返回的 code 不是 200，忽略该响应');
@@ -387,9 +390,10 @@ const app = createApp({
 
                 // 调用筛选方法
                 const filteredOrders = filterOrderData(response);
+                const filteredOrdersCopy = JSON.parse(JSON.stringify(filteredOrders));
                 // 将 filteredOrders 扩展到 orders 中
                 orders.value = [...orders.value, ...filteredOrders];
-                orderData.value = [...orderData.value, ...filteredOrders];
+                orderData.value = [...orderData.value, ...filteredOrdersCopy];
 
             } catch (error) {
                 console.error('请求 ERP 失败:', error);
@@ -404,7 +408,7 @@ const app = createApp({
                 // 监听鼠标滚轮事件
                 tabContent.value.addEventListener('wheel', handleWheel, { passive: false });
             }
-            console.log(orderData.value)
+            // console.log(orderData.value)
         });
 
         return {
@@ -417,9 +421,9 @@ const app = createApp({
             syncText,
             cleanInput,
             getFlagUrl,
-            toggleEdit,
             sendOrder,
             selectOrder,
+            googleVertifyOrder,
             deleteOrder,
             undoOrder,
             hoverOrder,
