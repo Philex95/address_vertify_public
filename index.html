@@ -13,7 +13,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <!-- 自定义样式 -->
-    <link rel="stylesheet" href="../src/style.css">
+    <link rel="stylesheet" href="/address_vertify_public/style.css">
     <!-- Vue 3 CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Element Plus JS -->
@@ -97,7 +97,7 @@
                         <div class="order-details">
                             <el-row>
                                 <el-col style="display: flex;align-items: center; padding-bottom: 5px;">
-                                    <el-image src="./icon/EC.png" style="width: 30px; height: 30px; padding: 5px"></el-image>
+                                    <el-image src="/address_vertify_public/icon/EC.png" style="width: 30px; height: 30px; padding: 5px"></el-image>
                                     <el-text tag="b" class="mx-1" size="large">易仓API同步信息</el-text>
                                 </el-col>
                                 <el-col :span="12"><el-input v-model="order.name" placeholder="no Data"><template #prepend>姓名</template></el-input></el-col>
@@ -114,7 +114,7 @@
                             </el-row>
                             <el-row>
                                 <el-col  style="display: flex;align-items: center; padding-bottom: 5px;">
-                                    <el-image src="./icon/google.png" style="width: 30px; height: 30px; padding: 5px"></el-image>
+                                    <el-image src="/address_vertify_public/icon/google.png" style="width: 30px; height: 30px; padding: 5px"></el-image>
                                     <el-text tag="b" class="mx-1" size="large">Google校验匹配</el-text>
                                 </el-col>
                                 <el-col><el-input v-model="order.googleVertify" placeholder="no Data"><template #prepend>规范地址</template></el-input></el-col>
@@ -147,9 +147,9 @@
     </div>
 
 <!-- ERP API 模块 -->
-<script type="module" src="../src/erpApi.js"></script>
+<script type="module" src="/address_vertify_public/erpApi.js"></script>
 <!-- 自定义逻辑 -->
-<script type="module" src="../src/main.js"></script>
+<script type="module" src="/address_vertify_public/main.js"></script>
 
 </body>
 </html>
