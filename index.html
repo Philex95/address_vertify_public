@@ -13,7 +13,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <!-- 自定义样式 -->
-    <link rel="stylesheet" href="/address_vertify_public/style.css">
+    <link rel="stylesheet" href="style.css">
     <!-- Vue 3 CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Element Plus JS -->
@@ -130,8 +130,8 @@
                             <el-button-group>
                                 <el-button type="primary" @click.stop="undoOrder(index)"><i class="bi bi-arrow-clockwise" style="margin-right: 5px"></i>撤回</el-button>
                                 <el-button type="primary" @click.stop="checkOrder(index)"><i class="bi bi-check-circle" style="margin-right: 5px"></i>检查</el-button>
-                                <el-button type="danger" @click.stop="selectOrder(index)"><i class="bi bi-google" style="margin-right: 5px"></i>验证</el-button>
-                                <el-button type="success" @click.stop="sendOrder(index)">发送</el-button>
+                                <el-button type="danger" @click.stop="googleVertifyOrder(index)"><i class="bi bi-google" style="margin-right: 5px"></i>验证</el-button>
+                                <el-button type="success" :disabled="!order.check" @click.stop="sendOrder(index)">发送</el-button>
                             </el-button-group>
 <!--                            <el-button type="primary" @click.stop="checkOrder(index)">检查</el-button>-->
 <!--                            <el-button type="success" @click.stop="sendOrder(index)">发送</el-button>-->
@@ -147,9 +147,9 @@
     </div>
 
 <!-- ERP API 模块 -->
-<script type="module" src="/address_vertify_public/erpApi.js"></script>
+<script type="module" src="erpApi.js"></script>
 <!-- 自定义逻辑 -->
-<script type="module" src="/address_vertify_public/main.js"></script>
+<script type="module" src="main.js"></script>
 
 </body>
 </html>
