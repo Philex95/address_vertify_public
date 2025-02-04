@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Map 地址纠正应用</title>
+    <!-- Element Plus CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+<!--    &lt;!&ndash; Element Plus 图标库 &ndash;&gt;-->
+<!--    <link rel="stylesheet" href="https://unpkg.com/@element-plus/icons-vue/dist/index.css">-->
+    <!-- 引入 Bootstrap Icons 的 CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="../src/style.css">
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Element Plus JS -->
+    <script src="https://unpkg.com/element-plus"></script>
+<!--    &lt;!&ndash; Element Plus 图标库 &ndash;&gt;-->
+<!--    <script src="https://unpkg.com/@element-plus/icons-vue"></script>-->
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB00igmq0Unboh2PbLdsD_vssyi7suXuEY&callback=initMap&libraries=places,marker" async defer></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 检查结果弹窗 -->
+        <el-dialog
+                v-model="checkResultDialogVisible"
+                title="检查结果"
+                width="600px"
+        >
+            <el-table :data="checkResult" style="width: 100%">
+                <el-table-column prop="property" label="属性"></el-table-column>
+                <el-table-column prop="status" label="结果"></el-table-column>
+                <el-table-column prop="reason" label="原因"></el-table-column>
+            </el-table>
+            <template #footer>
+                <el-button type="primary" @click="checkResultDialogVisible = false">返回</el-button>
+            </template>
+        </el-dialog>
+        <!-- 左侧订单信息栏 -->
+        <el-tabs class="order-info" type="border-card">
+                <!-- 第一个 Tab：订单列表 -->
+                <el-tab-pane label="订单列表">
+                    <div class="input-container">
+                        <el-input
+                            v-model="inputText"
+                            type="textarea"
+                            :rows="4"
+                            placeholder="粘贴内容到这里"
+                            @paste="handlePaste"
+                        ></el-input>
+                        <el-button type="primary" @click="syncText">同步</el-button>
+                        <el-button type="danger" @click="cleanInput" style="margin-left: 0px;">清空</el-button>
+                    </div>
+                    <div class="tab-content" ref="tabContent">
+                        <el-table :data="orders" style="width: 100%">
+                            <el-table-column prop="saleOrderCode" label="订单号"></el-table-column>
+                            <el-table-column prop="check" label="检测"></el-table-column>
+                            <el-table-column prop="createdDate" label="创建日期"></el-table-column>
+                            <el-table-column prop="updateDate" label="更新时间"></el-table-column>
+                        </el-table>
+                    </div>
+                </el-tab-pane>
+
+                <!-- 第二个 Tab：地址信息 -->
+                <el-tab-pane label="地址信息">
+                    <div class="tab-content" ref="tabContent" style="padding: 3px">
+                        <el-col class="order-unit" v-for="(order, index) in orders"
+                             :key="order.saleOrderCode"
+                             @click="selectOrder(index)"
+                             :class="{ selected: selectedOrderIndex === index }"
+                             @mouseenter="hoverOrder(index)"
+                             @mouseleave="unhoverOrder(index)">
+                        <el-row class="order-header">
+                            <el-col id="content-info" :span="2">
+                                <img :src="getFlagUrl(order.countryCode)" :alt="order.countryCode" class="country-flag" />
+                            </el-col>
+                            <el-col id="content-info" :span="16">
+                                <el-text tag="b" class="mx-1" size="large" class="order-id">{{ order.saleOrderCode }}</el-text>
+                            </el-col>
+                            <el-col id="content-check" :span="5">
+                                <el-text tag="b" class="mx-2" size="large" type="success" v-if="order.check">Check Success</el-text>
+                                <i class="bi bi-check-circle-fill" style="color: #67C23A; margin-left: 5px" v-if="order.check"></i>
+                                <el-text tag="b" class="mx-2" size="large" type="danger" v-if="!order.check">Check Failed</el-text>
+                                <i class="bi bi-x-circle-fill" style="color: #F56C6C;  margin-left: 5px" v-if="!order.check"></i>
+                            </el-col>
+                            <el-col id="content-delete" :span="1" style="display: flex; justify-content: flex-end;">
+                                <!-- 删除按钮 -->
+                                <el-button type="danger" circle @click.stop="deleteOrder(index)">
+                                    <i class="bi bi-trash"></i>
+                                </el-button>
+                            </el-col>
+                        </el-row>
+                        <div class="order-details">
+                            <el-row>
+                                <el-col style="display: flex;align-items: center; padding-bottom: 5px;">
+                                    <el-image src="./icon/EC.png" style="width: 30px; height: 30px; padding: 5px"></el-image>
+                                    <el-text tag="b" class="mx-1" size="large">易仓API同步信息</el-text>
+                                </el-col>
+                                <el-col :span="12"><el-input v-model="order.name" placeholder="no Data"><template #prepend>姓名</template></el-input></el-col>
+                                <el-col :span="12"><el-input v-model="order.phone" placeholder="no Data"><template #prepend>手机号</template></el-input></el-col>
+                                <el-col :span="8"><el-input v-model="order.state" placeholder="no Data"><template #prepend>州/省</template></el-input></el-col>
+                                <el-col :span="8"><el-input v-model="order.cityName" placeholder="no Data"><template #prepend>城市</template></el-input></el-col>
+                                <el-col :span="8"><el-input v-model="order.postalCode" placeholder="no Data"><template #prepend>邮编</template></el-input></el-col>
+
+                                <el-col><el-input v-model="order.line1" placeholder="no Data"><template #prepend>街道1</template></el-input></el-col>
+                                <el-col><el-input v-model="order.line2" placeholder="no Data"><template #prepend>街道2</template></el-input></el-col>
+                                <el-col><el-input v-model="order.line3" placeholder="no Data"><template #prepend>街道3</template></el-input></el-col>
+                                <el-col :span="8"><el-input v-model="order.doorplate" placeholder="no Data"><template #prepend>门牌号</template></el-input></el-col>
+                                <el-col :span="16"><el-input v-model="order.companyName" placeholder="no Data"><template #prepend>公司</template></el-input></el-col>
+                            </el-row>
+                            <el-row>
+                                <el-col  style="display: flex;align-items: center; padding-bottom: 5px;">
+                                    <el-image src="./icon/google.png" style="width: 30px; height: 30px; padding: 5px"></el-image>
+                                    <el-text tag="b" class="mx-1" size="large">Google校验匹配</el-text>
+                                </el-col>
+                                <el-col><el-input v-model="order.googleVertify" placeholder="no Data"><template #prepend>规范地址</template></el-input></el-col>
+                                <el-col :span="8"><el-input v-model="order.googleVertify_area_level_1" placeholder="no Data"><template #prepend>一级行政</template></el-input></el-col>
+                                <el-col :span="8"><el-input v-model="order.googleVertify_area_level_2" placeholder="no Data"><template #prepend>二级行政</template></el-input></el-col>
+                                <el-col :span="8"><el-input v-model="order.googleVertify_area_level_3" placeholder="no Data"><template #prepend>三级行政</template></el-input></el-col>
+                                <el-col :span="12"><el-input v-model="order.googleVertify_street_address" placeholder="no Data"><template #prepend>街道地址</template></el-input></el-col>
+                                <el-col :span="6"><el-input v-model="order.googleVertify_street_num" placeholder="no Data"><template #prepend>门牌号</template></el-input></el-col>
+                                <el-col :span="6"><el-input v-model="order.googleVertify_postcode" placeholder="no Data"><template #prepend>邮编</template></el-input></el-col>
+                            </el-row>
+                        </div>
+                        <div class="order-actions">
+                            <el-button-group>
+                                <el-button type="primary" @click.stop="undoOrder(index)"><i class="bi bi-arrow-clockwise" style="margin-right: 5px"></i>撤回</el-button>
+                                <el-button type="primary" @click.stop="checkOrder(index)"><i class="bi bi-check-circle" style="margin-right: 5px"></i>检查</el-button>
+                                <el-button type="danger" @click.stop="selectOrder(index)"><i class="bi bi-google" style="margin-right: 5px"></i>验证</el-button>
+                                <el-button type="success" @click.stop="sendOrder(index)">发送</el-button>
+                            </el-button-group>
+<!--                            <el-button type="primary" @click.stop="checkOrder(index)">检查</el-button>-->
+<!--                            <el-button type="success" @click.stop="sendOrder(index)">发送</el-button>-->
+                        </div>
+                        </el-col>
+                    </div>
+                </el-tab-pane>
+        </el-tabs>
+        <!-- 右侧 Google 地图 -->
+        <div class="map-container">
+            <div id="map" ref="map"></div>
+        </div>
+    </div>
+
+<!-- ERP API 模块 -->
+<script type="module" src="../src/erpApi.js"></script>
+<!-- 自定义逻辑 -->
+<script type="module" src="../src/main.js"></script>
+
+</body>
+</html>

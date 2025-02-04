@@ -1,0 +1,109 @@
+#app {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+}
+
+/* 左侧订单信息栏 */
+.order-info {
+    width: 40%; /* 占页面宽度的 1/5 */
+    height: 100vh;
+    background-color: #fff;
+    overflow-y: auto; /* 添加垂直滚动条 */
+    border-right: 1px solid #ddd;
+    box-sizing: border-box; /* 确保 padding 不会增加宽度 */
+}
+
+.order-unit {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fafafa;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    position: relative;
+    z-index: 1; /* 确保缩放后的元素在上层 */
+}
+
+.order-unit:hover {
+    transform: scale(1.01); /* 鼠标悬停时缩放 */
+}
+
+.order-unit.selected {
+    background-color: #e6f7ff; /* 选中状态背景色 */
+}
+
+.delete-button {
+    position: absolute;
+    /*top: 10px;*/
+    /*right: 10px;*/
+    /*z-index: 1;*/
+}
+
+.order-header {
+    display: flex;
+    /*justify-content: space-between;*/
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* 新增子 div，高度 20% */
+.input-container {
+    height: 20%;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.order-id {
+    font-weight: 500;
+}
+
+.country-flag {
+    width: 36px;
+    height: 24px;
+    border: 1px solid #ddd;
+}
+
+.order-details {
+    display: grid;
+    /*grid-template-columns: repeat(2, 1fr);*/
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.order-actions {
+    display: flex;
+    justify-content: right;
+}
+
+/* 右侧地图 */
+.map-container {
+    width: 60%; /* 占页面宽度的 4/5 */
+    height: 100vh;
+}
+
+#map {
+    height: 100%;
+    width: 100%;
+}
+
+/* Tab 样式 */
+.el-tabs {
+    height: 100%;
+}
+
+/* Tab-1 内容容器 */
+.tab-content {
+    height: calc(100vh - 20px); /* 调整高度以适应内容 */
+    overflow-y: auto; /* 添加滚动条 */
+}
+
+/* 隐藏滚动条 */
+.tab-content::-webkit-scrollbar {
+    width: 0; /* 隐藏垂直滚动条 */
+    height: 0; /* 隐藏水平滚动条 */
+}
+
+
